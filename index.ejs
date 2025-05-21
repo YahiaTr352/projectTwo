@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Syrital Payment</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+
+  <style>
+    .hidden { display: none; }
+
+    *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #e0e0e0, #f4f4f4);
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+
+
+@media (max-width : 500px){
+    html{
+        font-size: 14px;
+    }
+}
+
+      
+  .customerPhone-div{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+   
+  .customerPhone-form {
+    background: white;
+    padding: 60px;
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    animation: fadeIn 0.6s ease-out;
+  }
+  
+  .customerPhone-title {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+    font-weight: 600;
+    font-size: 24px;
+  }
+  
+  .customerPhone-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #444;
+    font-weight: 500;
+  }
+  
+  .customerPhone-input{
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    transition: 0.3s ease;
+    font-size: 15px;
+  }
+  
+  .customerPhone-input:focus {
+    border-color: #ff5151;
+    box-shadow: 0 0 8px rgba(123, 102, 255, 0.3);
+    outline: none;
+  }
+  
+  .customerPhone-button {
+    width: 100%;
+    padding: 14px 0;
+    background: #ff5151;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .customerPhone-error{
+    font-size: 14px;
+    margin-top: 20px;
+    color: red;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+
+  @media (max-width : 400px){
+    .customerPhone-title {
+      font-size: 23px;
+    }
+  }
+
+.otp-box {
+  background-color: white;
+  padding: 40px 60px;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.otp-icon img {
+  width: 100px;
+  margin-bottom: 15px;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.otp-inputs {
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.otp-inputs input {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  text-align: center;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.otp-inputs input:focus {
+  border-color: #ff5151;
+}
+
+.verify-btn {
+  background-color: #ff5151;
+  color: white;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.resend-text {
+  color: #ff5151;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.resend-text.disabled {
+  color: gray;        
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration: none;
+  opacity: 0.6;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="customerPhone-div" id="phonePage">
+    <form class="customerPhone-form" id="paymentForm">
+      <h2 class="customerPhone-title">Enter Your Phone</h2>
+      <label class="customerPhone-label" for="customerMSISDN">Phone Number</label>
+      <input class="customerPhone-input" type="text" id="customerMSISDN" placeholder="+9639xxxxxxx" />
+      <label class="customerPhone-label" for="confirmCustomerMSISDN">Confirm Phone Number</label>
+      <input class="customerPhone-input" type="text" id="confirmCustomerMSISDN" placeholder="+9639xxxxxxx" />
+      <button class="customerPhone-button" type="submit">Next</button>
+      <p class="customerPhone-error" id="errorMsg"></p>
+    </form>
+  </div>
+
+  <div class="otp-box hidden" id="otpPage">
+    <div class="otp-icon">
+      <img src="verifyImageOne.png" alt="secure" />
+    </div>
+    <h2>Enter OTP Code</h2>
+    <form id="otpForm">
+      <div class="otp-inputs">
+        <input type="text" maxlength="1" />
+        <input type="text" maxlength="1" />
+        <input type="text" maxlength="1" />
+        <input type="text" maxlength="1" />
+        <input type="text" maxlength="1" />
+        <input type="text" maxlength="1" />
+      </div>
+      <button type="submit" class="verify-btn">Verify OTP</button>
+      <p class="resend-text" id="resendBtn">Resend OTP</p>
+    </form>
+  </div>
+
+  <script>
+    function showToast(message, type = "info", customDuration = null) {
+    let background;
+    let duration;
+  
+    switch (type) {
+      case "success":
+        background = "#28a745";
+        break;
+      default:
+        background = "#ff5151";
+        break;
+    }
+  
+    if (customDuration !== null) {
+      duration = customDuration;
+    } else {
+      duration = type === "otp" ? 10000 : 3000;
+    }
+
+    const safeMessage = DOMPurify.sanitize(message, {ALLOWED_TAGS: [], ALLOWED_ATTR: []});
+  
+    Toastify({
+      text: safeMessage,
+      duration: duration,
+      gravity: "top",
+      position: "center",
+      style: {
+        textAlign: "center",
+        background: background,
+        padding: "20px",
+        borderRadius: "10px",
+        minWidth: "300px",
+      }
+    }).showToast();
+  }
+  
+    const fixedData = {
+      companyName: "<%= companyName %>",
+      programmName: "<%= programmName %>",
+      code: "<%= code %>"
+    };
+
+    const token = localStorage.getItem("token");
+    const transactionID = "<%= transactionID %>";
+    const merchantMSISDN = "<%= merchantMSISDN %>";
+    const amount = "<%= amount %>";
+
+    async function getToken() {
+      try {
+        const response = await axios.post('http://localhost:3001/api/clients/get-token', fixedData);
+        if (response.data.errorCode === 0) {
+          const tokenSanitized = DOMPurify.sanitize(response.data.token, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+          localStorage.setItem("token", tokenSanitized);
+        }
+      } catch (error) {
+        showToast("something went wrong, try again later.");
+      }
+    }
+
+    getToken();
+
+    document.getElementById("paymentForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const errorMsg = document.getElementById("errorMsg");
+      errorMsg.textContent = "";
+
+      const customerMSISDN = document.getElementById("customerMSISDN").value.trim();
+      const confirmCustomerMSISDN = document.getElementById("confirmCustomerMSISDN").value.trim();
+
+      if (!customerMSISDN || !confirmCustomerMSISDN) {
+        showToast("All fields are required.");
+        return;
+      }
+
+      if (customerMSISDN !== confirmCustomerMSISDN) {
+        showToast("Phone numbers do not match.");
+        return;
+      }
+
+      const phoneRegex = /^\+9639\d{8}$/;
+      if (!phoneRegex.test(customerMSISDN)) {
+        showToast("Phone number format is invalid. Use +9639 followed by 8 digits.");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.post('http://localhost:3001/api/clients/payment-request', {
+          code: fixedData.code,
+          customerMSISDN,
+          transactionID,
+          merchantMSISDN,
+          amount : Number(amount),
+          token
+        });
+
+        if (response.data.errorCode === 0) {
+          const otpSanitized = DOMPurify.sanitize(response.data.details.otp, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+          localStorage.setItem("otp", otpSanitized);
+          showToast("You have received an OTP. ✅", "success");
+
+          setTimeout(() => {
+          console.log("Navigating to OTP page...");
+          document.getElementById("phonePage").classList.add("hidden");
+          document.getElementById("otpPage").classList.remove("hidden");
+          const otpSanitized = DOMPurify.sanitize(response.data.details.otp, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+          showToast(`Your verification code is : ${otpSanitized}`, "success", 10000);
+          }, 5000);
+
+          if (phonePage && otpPage) {
+           phonePage.style.display = "none";   
+           otpPage.style.display = "block";     
+          }
+
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          showToast(error.response.data.message);
+        } else {
+          showToast("something went wrong, try again later.");
+        }
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const inputs = document.querySelectorAll(".otp-inputs input");
+      const resendBtn = document.getElementById("resendBtn");
+      const form = document.getElementById("otpForm");
+
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", () => {
+          if (input.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !input.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const otpCode = Array.from(inputs).map((input) => input.value).join("");
+
+        if (otpCode.length !== 6 || !/^\d{6}$/.test(otpCode)) {
+          showToast("Please enter a valid 6-digit OTP.");
+          return;
+        }
+
+        try {
+          const response = await axios.post("http://localhost:3001/api/clients/payment-confirmation", {
+            code: fixedData.code,
+            merchantMSISDN,
+            transactionID,
+            OTP: otpCode,
+            token
+          });
+
+          if (response.data.errorCode === 0) {
+            showToast("OTP verified successfully! ✅", "success");
+          }
+        } catch (error) {
+          if (error.response && [404, 405, 406, 407, 408, 410].includes(error.response.status)) {
+            showToast(error.response.data.errorDesc);
+          } else {
+            showToast("something went wrong, try again later.");
+          }
+        }
+      });
+
+      resendBtn.addEventListener("click", async () => {
+        if (resendBtn.classList.contains("disabled")) return;
+
+        resendBtn.classList.add("disabled");
+        let seconds = 60;
+        resendBtn.textContent = `Resend OTP in ${seconds}s`;
+
+        const timerInterval = setInterval(() => {
+          seconds--;
+          resendBtn.textContent = `Resend OTP in ${seconds}s`;
+          if (seconds <= 0) {
+            clearInterval(timerInterval);
+            resendBtn.classList.remove("disabled");
+            resendBtn.textContent = "Resend OTP";
+          }
+        }, 1000);
+
+        try {
+          const response = await axios.post("http://localhost:3001/api/clients/resend-otp", {
+            code: fixedData.code,
+            merchantMSISDN,
+            transactionID,
+            token
+          });
+
+          if (response.data.errorCode === 0) {
+            const newOtp = response.data.otp;
+            const sanitizedOtp = DOMPurify.sanitize(newOtp, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+            localStorage.setItem("otp", sanitizedOtp);
+            showToast(`Your verification code is : ${sanitizedOtp}`, "success", 10000);
+          }
+        } catch (error) {
+          clearInterval(timerInterval);
+          resendBtn.classList.remove("disabled");
+          resendBtn.textContent = "Resend OTP";
+          showToast("something went wrong, try again later.");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,3 @@
-
-
 function setLoadingState(isLoading) {
   const button = document.getElementById("submitButton");
   const spinner = document.getElementById("buttonSpinner");
@@ -10,7 +8,7 @@ function setLoadingState(isLoading) {
   text.textContent = isLoading ? "" : "Next";
 }
 
-const baseURL = "http://localhost:3001";
+const baseURL = "https://projecttwo-r5gg.onrender.com";
 
 async function sendData() {
           const pathParts = window.location.pathname.split("/");

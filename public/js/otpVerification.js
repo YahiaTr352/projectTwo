@@ -13,7 +13,7 @@ function setLoadingState(isLoading) {
 const pathParts = window.location.pathname.split("/");
 const publicID = pathParts[pathParts.length - 1];
 window.addEventListener("DOMContentLoaded", async () => {
-  const baseURL = "http://localhost:3001";
+  const baseURL = "https://projecttwo-r5gg.onrender.com";
   let fixedData;
     try{
     rsaKeyPair = await generateRSAKeyPair();

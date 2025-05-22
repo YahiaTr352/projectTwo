@@ -13,11 +13,11 @@
 // module.exports = ConnectDB;
 
 const mongoose = require("mongoose");
-const uri = "mongodb+srv://user1:yahiamo99@cluster0.mqpsj1h.mongodb.net/";
+const uri = "mongodb+srv://user1:yahiamo99@cluster0.sl0sxvf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const ConnectDB = async() => {
 
     try{
-    await mongoose.connect(uri, {
+     await mongoose.connect(uri, {
         ssl: true, // تأكد من أن الاتصال باستخدام SSL
     })
 

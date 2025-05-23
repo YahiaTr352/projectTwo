@@ -8,6 +8,8 @@ function setLoadingState(isLoading) {
   text.textContent = isLoading ? "" : "Next";
 }
 
+let token;
+
 const baseURL = "https://projecttwo-iqjp.onrender.com";
 // const baseURL = "http://localhost:3001";
 
@@ -102,8 +104,8 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
     }, { withCredentials: true });
 
     const result = await decryptHybrid(tokenRes.data, rsaKeyPair.privateKey);
-    console.log(result);
     document.cookie = `token=${result.token}; path=/; SameSite=Lax`;
+    token = result.token;
 
 
   } catch (error) {
@@ -142,7 +144,7 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
       return showToast("Invalid phone number. It must start with 09.");
     }
 
-    const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
+    // const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
 
     try {
     

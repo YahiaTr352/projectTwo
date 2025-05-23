@@ -84,28 +84,26 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
 
 
     // تشفير البيانات وإرسال طلب token
-    const tokenPayload ={
+  const tokenPayload = {
       companyName: fixedData.companyName,
       programmName: fixedData.programmName,
       merchantMSISDN: fixedData.merchantMSISDN,
       code: fixedData.code
     };
 
-  const encryptedTokenPayload = await encryptHybrid(JSON.stringify({
-    ...tokenPayload,
-    pageID: publicID // ✅ أضف pageID داخل البيانات المشفرة
-  }), serverPublicKey);
+    const encryptedToken = await encryptHybrid(JSON.stringify({
+      ...tokenPayload,
+      pageID: publicID
+    }), serverPublicKey);
 
-  const tokenRes = await axios.post(`${baseURL}/api/clients/get-token`, {
-    ...encryptedTokenPayload,
-    pageID: publicID // ✅ أضف pageID أيضًا خارج التشفير
-  }, {
-    withCredentials: true
-  });
+    const tokenRes = await axios.post(`${baseURL}/api/clients/get-token`, {
+      ...encryptedToken,
+      pageID: publicID
+    }, { withCredentials: true });
 
     const result = await decryptHybrid(tokenRes.data, rsaKeyPair.privateKey);
-    console.log(result);
     document.cookie = `token=${result.token}; path=/; SameSite=Lax`;
+
 
   } catch (error) {
     if (error.response?.data?.encryptedAESKey) {

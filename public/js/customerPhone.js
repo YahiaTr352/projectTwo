@@ -154,6 +154,10 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
         token
       };
 
+      console.log("🔐 Payload before encryption:", {
+      ...paymentRequestPayload,
+      pageID: publicID
+    });
 
       const encryptedpaymentRequestPayload = await encryptHybrid(JSON.stringify({
         ...paymentRequestPayload,

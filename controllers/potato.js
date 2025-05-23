@@ -643,7 +643,10 @@ const paymentRequest = async (req, res) => {
   } catch (err) {
     console.error("Decryption failed:", err);
     return res.status(400).json(encryptHybrid(JSON.stringify({ message: "Invalid encrypted request" }), clientPublicKey));
-  }
+  }console.log("🔓 Decrypted data on server:", decryptedData);
+
+  console.log("🔓 Decrypted data on server:", decryptedData);
+
 
   const { code, customerMSISDN, merchantMSISDN, amount, token, transactionID } = decryptedData;
 

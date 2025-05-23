@@ -268,7 +268,8 @@ const {
 } = require('../utils/encryption');
 const paymentData = require("../models/paymentDataModel");
 
-BASE_API_URL = "https://projectone-q5eh.onrender.com"
+BASE_API_URL = "https://projectone-wqlf.onrender.com"
+// BASE_API_URL = "http://localhost:5000";
 // ======== API Handlers ========
 
 // const getToken = async (req, res) => {
@@ -1348,7 +1349,7 @@ const getUrl = async (req, res) => {
       createdAt: new Date()
     });
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = `https://projecttwo-iqjp.onrender.com`;
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 

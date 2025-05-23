@@ -8,7 +8,8 @@ function setLoadingState(isLoading) {
   text.textContent = isLoading ? "" : "Next";
 }
 
-const baseURL = "https://projecttwo-r5gg.onrender.com";
+const baseURL = "https://projecttwo-iqjp.onrender.com";
+// const baseURL = "http://localhost:3001";
 
 async function sendData() {
           const pathParts = window.location.pathname.split("/");

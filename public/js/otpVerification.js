@@ -14,6 +14,7 @@ const pathParts = window.location.pathname.split("/");
 const publicID = pathParts[pathParts.length - 1];
 window.addEventListener("DOMContentLoaded", async () => {
   const baseURL = "https://projecttwo-r5gg.onrender.com";
+    // const baseURL = "http://localhost:3001";
   let fixedData;
     try{
     rsaKeyPair = await generateRSAKeyPair();

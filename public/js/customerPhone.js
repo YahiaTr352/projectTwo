@@ -102,7 +102,8 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
     }, { withCredentials: true });
 
     const result = await decryptHybrid(tokenRes.data, rsaKeyPair.privateKey);
-    document.cookie = `token=${result.token}; path=/; SameSite=Lax; Secure`;
+    // document.cookie = `token=${result.token}; path=/; SameSite=Lax`;
+    sessionStorage.setItem("token", result.token);
 
 
   } catch (error) {
@@ -141,7 +142,11 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
       return showToast("Invalid phone number. It must start with 09.");
     }
 
-    const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
+    // const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
+
+    const token = sessionStorage.getItem("token");
+
+    
 
     try {
     
@@ -155,9 +160,9 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
       };
 
       console.log("🔐 Payload before encryption:", {
-      ...paymentRequestPayload,
-      pageID: publicID
-    });
+    ...paymentRequestPayload,
+    pageID: publicID
+  });
 
       const encryptedpaymentRequestPayload = await encryptHybrid(JSON.stringify({
         ...paymentRequestPayload,

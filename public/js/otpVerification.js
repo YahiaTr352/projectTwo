@@ -88,13 +88,13 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
   showToast(`Your verification code is: ${fixedData.otp}`, "success", 10000);
 
   // ✅ قراءة التوكن من الكوكيز
-  function getCookie(name) {
-    const cookies = document.cookie.split("; ");
-    const found = cookies.find(row => row.startsWith(name + "="));
-    return found ? found.split("=")[1] : null;
-  }
+  // function getCookie(name) {
+  //   const cookies = document.cookie.split("; ");
+  //   const found = cookies.find(row => row.startsWith(name + "="));
+  //   return found ? found.split("=")[1] : null;
+  // }
 
-  const token = getCookie("token");
+  const token = sessionStorage.getItem("token");
 
   const inputs = document.querySelectorAll(".otp-inputs input");
   const resendBtn = document.getElementById("resendBtn");

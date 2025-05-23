@@ -102,6 +102,7 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
     }, { withCredentials: true });
 
     const result = await decryptHybrid(tokenRes.data, rsaKeyPair.privateKey);
+    console.log(result);
     document.cookie = `token=${result.token}; path=/; SameSite=Lax`;
 
 

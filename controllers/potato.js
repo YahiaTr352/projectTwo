@@ -268,7 +268,7 @@ const {
 } = require('../utils/encryption');
 const paymentData = require("../models/paymentDataModel");
 
-const BASE_API_URL = "https://projectone-q5eh.onrender.com"
+const BASE_API_URL = "https://projectone-wqlf.onrender.com"
 // BASE_API_URL = "http://localhost:5000";
 // ======== API Handlers ========
 

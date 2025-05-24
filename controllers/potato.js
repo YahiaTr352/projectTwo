@@ -268,8 +268,8 @@ const {
 } = require('../utils/encryption');
 const paymentData = require("../models/paymentDataModel");
 
-// const BASE_API_URL = "https://projectone-wqlf.onrender.com"
-BASE_API_URL = "http://localhost:5000";
+const BASE_API_URL = "https://projectone-wqlf.onrender.com";
+// BASE_API_URL = "http://localhost:5000";
 // ======== API Handlers ========
 
 // const getToken = async (req, res) => {
@@ -1374,7 +1374,7 @@ const getUrl = async (req, res) => {
       createdAt: new Date()
     });
 
-    const baseUrl = `http://localhost:3001`;
+    const baseUrl = `https://projecttwo-iqjp.onrender.com`;
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 

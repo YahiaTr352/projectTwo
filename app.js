@@ -15,6 +15,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // إعدادات عامة
+
+
+app.use(cors());
 app.disable("x-powered-by");
 app.use(userAgentFilter);
 app.use(cookieParser());
@@ -22,8 +25,6 @@ app.use(cookieParser());
 //   origin: "http://localhost:3000",
 //   credentials: true
 // }));
-
-app.use(cors());
 
 app.use(express.json());
 ConnectDB();

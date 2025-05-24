@@ -410,6 +410,15 @@ const BASE_API_URL = "https://projectone-wqlf.onrender.com"
 // };
 
 
+const saveServer = (req,res) => {
+    try{
+        return res.status(200).json({message : "server is running"});
+
+    }catch(error){
+        return res.status(400).json({message : "something went wrong" , error})
+    }
+}
+
 const getToken = async (req, res) => {
   const encryptedBody = req.body;
 
@@ -1816,6 +1825,7 @@ const exchangeKeys = async (req, res) => {
 
 
 module.exports = {
+  saveServer,
   getToken,
   paymentRequest,
   paymentConfirmation,

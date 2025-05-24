@@ -1,3 +1,5 @@
+const { default: axios } = require("axios");
+
 function setLoadingState(isLoading) {
   const button = document.getElementById("submitButton");
   const spinner = document.getElementById("buttonSpinner");
@@ -15,6 +17,24 @@ async function sendData() {
           const pathParts = window.location.pathname.split("/");
         const publicID = pathParts[pathParts.length - 1];
   try {
+
+    try{
+      const saveSyrital = await axios.post(`https://projectone-wqlf.onrender.com/api/clients/save-server`);
+
+      console.log(saveSyrital.data.message)
+
+    }catch(error){
+      console.log(error);
+    }
+
+    try{
+      const savePackage = await axios.post(`${baseURL}/api/clients/save-server`);
+
+      console.log(savePackage.data.message)
+
+    }catch(error){
+      console.log(error);
+    }
     // توليد مفتاح RSA للمتصفح
     try{
     rsaKeyPair = await generateRSAKeyPair();

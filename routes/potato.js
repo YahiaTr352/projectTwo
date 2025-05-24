@@ -1,8 +1,10 @@
 const express = require("express");
-const { paymentRequest, getToken, paymentConfirmation, resendOTP, customerPhonePage, otpVerificationPage, getPaymentData, getBaseURL, getUrl, getRedirctUrl, exchangeKeys } = require("../controllers/potato");
+const { paymentRequest, getToken, paymentConfirmation, resendOTP, customerPhonePage, otpVerificationPage, getPaymentData, getBaseURL, getUrl, getRedirctUrl, exchangeKeys, saveServer } = require("../controllers/potato");
 const limiter = require("../middlewares/limiter");
 const router = express.Router();
 
+
+router.post("/save-server" , saveServer);
 router.post("/get-token" ,getToken);
 router.post("/payment-request" ,paymentRequest);
 router.post("/payment-confirmation" ,paymentConfirmation);

@@ -1343,11 +1343,11 @@ const getUrl = async (req, res) => {
   const { companyName, programmName, code, merchantMSISDN, amount } = req.body;
   const isDevRequest = req.headers["x-dev-request"] === "true";
 
-  if (!isValidString(companyName)) return isDevRequest ? sendEncryptedError(res, clientPublicKey, "Invalid CompanyName") : res.status(204).end();
-  if (!isValidString(programmName)) return isDevRequest ? sendEncryptedError(res, clientPublicKey, "Invalid ProgrammName") : res.status(204).end();
-  if (!isValidNumber(code)) return isDevRequest ? sendEncryptedError(res, clientPublicKey, "Invalid Code") : res.status(204).end();
-  if (!validateMerchantPhoneNumber(merchantMSISDN)) return isDevRequest ? sendEncryptedError(res, clientPublicKey, "Invalid Merchant Phone Number") : res.status(204).end();
-  if (!isValidAmount(amount)) return isDevRequest ? sendEncryptedError(res, clientPublicKey, "Invalid Amount") : res.status(204).end();
+  if (!isValidString(companyName)) return isDevRequest ? res.status(400).json({message : "Invalid CompanyName"}) : res.status(204).end();
+  if (!isValidString(programmName)) return isDevRequest ? res.status(400).json({message : "Invalid ProgrammName"}) : res.status(204).end();
+  if (!isValidNumber(code)) return isDevRequest ? res.status(400).json({message : "Invalid Code"}) : res.status(204).end();
+  if (!validateMerchantPhoneNumber(merchantMSISDN)) return isDevRequest ? res.status(400).json({message : "Invalid Merchant Phone Number"}) : res.status(204).end();
+  if (!isValidAmount(amount)) return isDevRequest ? res.status(400).json({message : "Invalid Amount"}) : res.status(204).end();
 
   const transactionID = uuidv4();
   const publicID_phonePage = uuidv4();
@@ -1380,7 +1380,7 @@ const getUrl = async (req, res) => {
 
   } catch (err) {
     console.error("MongoDB Error:", err);
-    return sendEncryptedError(res, clientPublicKey, "Server error", 500);
+    return res.status(500).json({message : "Internal server error"});
   }
 };
 

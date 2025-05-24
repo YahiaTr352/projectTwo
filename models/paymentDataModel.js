@@ -6,6 +6,7 @@ const transactionSchema = new mongoose.Schema({
   programmName: String,
   code: Number,
   merchantMSISDN: String,
+  customerMSISDN: String,
   amount: Number,
   otp: { type: String, default: null },
   publicIDs: {
@@ -14,6 +15,7 @@ const transactionSchema = new mongoose.Schema({
   },
   clientPublicKey: String,
   serverPrivateKey: String,
+  paymentSuccess: { type: Boolean, default: false }, 
   createdAt: { type: Date, default: Date.now }
 });
 

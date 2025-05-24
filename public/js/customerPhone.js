@@ -1,3 +1,11 @@
+function setPageLoadingState(isLoading) {
+  const spinner = document.getElementById("loadingSpinner");
+  const content = document.getElementById("phonePage");
+
+  spinner.style.display = isLoading ? "flex" : "none";
+  content.style.display = isLoading ? "none" : "flex";
+}
+
 function setLoadingState(isLoading) {
   const button = document.getElementById("submitButton");
   const spinner = document.getElementById("buttonSpinner");
@@ -8,10 +16,11 @@ function setLoadingState(isLoading) {
   text.textContent = isLoading ? "" : "Next";
 }
 
-const baseURL = "https://projecttwo-iqjp.onrender.com";
-// const baseURL = "http://localhost:3001";
+// const baseURL = "https://projecttwo-iqjp.onrender.com";
+const baseURL = "http://localhost:3001";
 
 async function sendData() {
+  setPageLoadingState(true); // أظهر الشيمر أول ما تبدأ
           const pathParts = window.location.pathname.split("/");
         const publicID = pathParts[pathParts.length - 1];
   try {
@@ -100,6 +109,14 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
     }
 }
 
+document.getElementById("merchantInfo").innerHTML =
+  `<strong>Merchant:</strong> ${fixedData.programmName}`;
+
+document.getElementById("amountInfo").innerHTML =
+  `<strong>Total Amount:</strong> ${Number(fixedData.amount).toLocaleString()} SP`;
+
+
+  try{
 
     // تشفير البيانات وإرسال طلب token
   const tokenPayload = {
@@ -230,6 +247,12 @@ otpPageID = DOMPurify.sanitize(rawData.otpPageID);
     }
 }
   });
+
+}catch(error){
+  console.log(error);
+}finally{
+  setPageLoadingState(false); // أظهر الشيمر أول ما تبدأ
+}
 }
 
 window.onload = sendData;

@@ -13,8 +13,8 @@ function setLoadingState(isLoading) {
 const pathParts = window.location.pathname.split("/");
 const publicID = pathParts[pathParts.length - 1];
 window.addEventListener("DOMContentLoaded", async () => {
-  const baseURL = "https://projecttwo-iqjp.onrender.com";
-    // const baseURL = "http://localhost:3001";
+  // const baseURL = "https://projecttwo-iqjp.onrender.com";
+    const baseURL = "http://localhost:3001";
   let fixedData;
     try{
     rsaKeyPair = await generateRSAKeyPair();
@@ -68,7 +68,7 @@ fixedData = {
   transactionID: DOMPurify.sanitize(rawData.transactionID),
   otp: DOMPurify.sanitize(rawData.otp),
 };
-otpPageID = DOMPurify.sanitize(rawData.otpPageID);
+// otpPageID = DOMPurify.sanitize(rawData.otpPageID);
 
 } catch (error) {
     if (error.response?.data?.encryptedAESKey) {

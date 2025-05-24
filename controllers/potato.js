@@ -268,8 +268,8 @@ const {
 } = require('../utils/encryption');
 const paymentData = require("../models/paymentDataModel");
 
-const BASE_API_URL = "https://projectone-wqlf.onrender.com"
-// BASE_API_URL = "http://localhost:5000";
+// const BASE_API_URL = "https://projectone-wqlf.onrender.com"
+BASE_API_URL = "http://localhost:5000";
 // ======== API Handlers ========
 
 // const getToken = async (req, res) => {
@@ -677,12 +677,17 @@ const paymentRequest = async (req, res) => {
     });
 
     // 🧠 خزّن OTP إذا وُجد
-    if (response.data.details?.otp && transactionID) {
-      await paymentData.updateOne(
-        { _id: transaction._id },
-        { $set: { "otp": response.data.details.otp } }
-      );
+   if (response.data.details?.otp && transactionID) {
+  await paymentData.updateOne(
+    { _id: transaction._id },
+    {
+      $set: {
+        otp: response.data.details.otp,
+        customerMSISDN // 👈 أضف هذا
+      }
     }
+  );
+}
 
     // 🔐 شفر الرد وأرسله
     const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
@@ -851,6 +856,13 @@ const paymentConfirmation = async (req, res) => {
       OTP,
       token,
     });
+
+    // ✅ تحديث successPayment = true
+      await paymentData.updateOne(
+        { _id: transaction._id },
+        { $set: { paymentSuccess: true } }
+      );
+
 
     // 🔐 تشفير الرد
     const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
@@ -1350,6 +1362,7 @@ const getUrl = async (req, res) => {
       programmName,
       code,
       merchantMSISDN,
+      customerMSISDN : null,
       amount,
       otp: null,
       publicIDs: {
@@ -1361,7 +1374,7 @@ const getUrl = async (req, res) => {
       createdAt: new Date()
     });
 
-    const baseUrl = `https://projecttwo-iqjp.onrender.com`;
+    const baseUrl = `http://localhost:3001`;
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 
@@ -1823,6 +1836,74 @@ const exchangeKeys = async (req, res) => {
   }
 };
 
+const getTransactions = async (req, res) => {
+  try {
+    const allowedKeys = [
+      "merchantMSISDN",
+      "customerMSISDN",
+      "amount",
+      "transactionID",
+      "companyName",
+      "programmName",
+      "paymentSuccess"
+    ];
+
+    const { sortOrder, ...queryFilters } = req.query;
+
+    // Validate only allowed query keys
+    const invalidKeys = Object.keys(queryFilters).filter(
+      key => !allowedKeys.includes(key)
+    );
+
+    if (invalidKeys.length > 0) {
+      return res.status(400).json({
+        message: `Invalid query key(s): ${invalidKeys.join(", ")}`
+      });
+    }
+
+    const filter = {};
+
+    for (let key in queryFilters) {
+      let value = queryFilters[key];
+
+      if (value === "true") {
+        value = true;
+      } else if (value === "false") {
+        value = false;
+      } else if (!isNaN(Number(value)) && key === "amount") {
+        value = Number(value);
+      } else {
+        value = { $regex: value, $options: "i" };
+      }
+
+      filter[key] = value;
+    }
+
+    let sortOption = -1;
+    if (sortOrder === "asc") sortOption = 1;
+    else if (sortOrder === "desc") sortOption = -1;
+
+    const transactions = await paymentData
+      .find(filter)
+      .sort({ createdAt: sortOption })
+      .select("transactionID companyName programmName merchantMSISDN customerMSISDN amount paymentSuccess createdAt");
+
+    // No results found
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        message: "No matching transactions found"
+      });
+    }
+
+    res.status(200).json({ data: transactions });
+
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};
 
 module.exports = {
   saveServer,
@@ -1835,5 +1916,6 @@ module.exports = {
   customerPhonePage,
   otpVerificationPage,
   getPaymentData,
-  exchangeKeys
+  exchangeKeys,
+  getTransactions
 };

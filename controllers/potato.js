@@ -1378,8 +1378,8 @@ const getUrl = async (req, res) => {
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 
-  } catch (err) {
-    console.error("MongoDB Error:", err);
+  } catch (error) {
+    console.error("Login error:", error);  // اطبع الخطأ هنا
     return res.status(500).json({message : "Internal server error"});
   }
 };

@@ -1,5 +1,3 @@
-const { default: axios } = require("axios");
-
 function setLoadingState(isLoading) {
   const button = document.getElementById("submitButton");
   const spinner = document.getElementById("buttonSpinner");

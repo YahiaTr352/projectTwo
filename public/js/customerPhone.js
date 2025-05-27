@@ -25,23 +25,23 @@
 //         const publicID = pathParts[pathParts.length - 1];
 //   try {
 
-//     try{
-//       const saveSyrital = await axios.post(`https://projectone-wqlf.onrender.com/api/clients/save-server`);
+//     // try{
+//     //   const saveSyrital = await axios.post(`https://projectone-wqlf.onrender.com/api/clients/save-server`);
 
-//       console.log(saveSyrital.data.message)
+//     //   console.log(saveSyrital.data.message)
 
-//     }catch(error){
-//       console.log(error);
-//     }
+//     // }catch(error){
+//     //   console.log(error);
+//     // }
 
-//     try{
-//       const savePackage = await axios.post(`${baseURL}/api/clients/save-server`);
+//     // try{
+//     //   const savePackage = await axios.post(`${baseURL}/api/clients/save-server`);
 
-//       console.log(savePackage.data.message)
+//     //   console.log(savePackage.data.message)
 
-//     }catch(error){
-//       console.log(error);
-//     }
+//     // }catch(error){
+//     //   console.log(error);
+//     // }
 //     // توليد مفتاح RSA للمتصفح
 //     try{
 //     rsaKeyPair = await generateRSAKeyPair();

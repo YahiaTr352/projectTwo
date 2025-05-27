@@ -5,8 +5,9 @@
 }
 
 body{
+    overflow: hidden;
     font-family: 'Arial' , sans-serif;
-    background: linear-gradient(135deg, #e0e0e0, #f4f4f4);
+    /* background: linear-gradient(135deg, #e0e0e0, #f4f4f4); */
 }
 
 @media (max-width : 500px){

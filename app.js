@@ -6,9 +6,9 @@ const cors = require("cors");
 const path = require("path");
 const session = require("express-session");
 const userAgentFilter = require("./middlewares/userAgentFilter");
-const limiter = require("./middlewares/limiter");
 const cookieParser = require("cookie-parser");
 const ConnectDB = require("./config/config");
+const rateLimiterMiddleware = require("./middlewares/limiter");
 require("dotenv").config(); // تحميل متغيرات البيئة من .env
 
 const app = express();
@@ -16,15 +16,15 @@ const port = process.env.PORT || 3001;
 
 // إعدادات عامة
 
-
-app.use(cors());
+// app.use(cors());
 app.disable("x-powered-by");
 app.use(userAgentFilter);
 app.use(cookieParser());
-// app.use(cors({
-//   origin: "http://localhost:3000",
-//   credentials: true
-// }));
+app.use(rateLimiterMiddleware);
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 
 app.use(express.json());
 ConnectDB();

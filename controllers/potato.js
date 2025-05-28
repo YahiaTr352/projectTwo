@@ -1412,6 +1412,17 @@ const customerPhonePage = async (req, res) => {
       return res.status(404).send("Transaction not found");
     }
 
+      let userId = req.cookies?.userID;
+
+      if (!userId) {
+        userId = crypto.randomUUID(); // أو أي توليد ID
+        res.cookie("userID", userId, {
+          httpOnly: true,
+          sameSite: "Lax", // أو "None" إذا iframe من دومين خارجي + HTTPS
+          maxAge: 60 * 60 * 1000, // ساعة مثلاً
+        });
+      }
+
     // يمكنك تمرير بيانات إلى الصفحة إذا لزم الأمر (أو فقط publicID)
     res.render("pages/customerPhone/customerPhone");
 

@@ -52,3 +52,23 @@ app.use("/api/clients", potatoRoutes);
 app.listen(port, () => {
   console.log(`✅ Server is running on port ${port}`);
 });
+
+// const axios = require('axios');
+
+// const ip = '185.220.101.1';
+// const checkVPN = async (ip) => {
+//   try {
+//     const response = await axios.get(`https://proxycheck.io/v2/${ip}?key=1m3t93-nz9b86-g48v99-y3h554`);
+//     const data = response.data;
+//     console.log(data);
+//     if (data.status === 'ok' && data[ip].proxy === 'yes') {
+//       console.log(`IP ${ip} is using VPN/Proxy/Tor! 🚫`);
+//     } else {
+//       console.log(`IP ${ip} is clean ✅`);
+//     }
+//   } catch (error) {
+//     console.error('Error:', error);
+//   }
+// };
+
+// checkVPN(ip); // استبدل هذا بالـ IP الذي ترغب في فحصه

@@ -110,26 +110,39 @@ const rateLimiterMiddleware = async (req, res, next) => {
     }
 
     // ✅ إذا تم الكشف عن VPN أو Tor أو Proxy
-    if (vpnCheck.isVpn) {
-      rateLimitData.ipList = rateLimitData.ipList || [];
+if (vpnCheck.isVpn) {
+  rateLimitData.ipList = rateLimitData.ipList || [];
 
-      // حذف الإدخالات الأقدم من 5 دقائق
-      const last5Min = new Date(Date.now() - 5 * 60 * 1000);
-      rateLimitData.ipList = rateLimitData.ipList.filter(entry => new Date(entry.time) > last5Min);
+  // تأكد إنه هذا الـ IP ما تم تسجيله خلال آخر 5 دقائق
+  const now = new Date();
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-      // أضف IP جديد
-      rateLimitData.ipList.push({ ip, time: new Date() });
+  const recentIPs = rateLimitData.ipList.filter(entry =>
+    entry.ip === ip && entry.time > fiveMinutesAgo
+  );
 
-      // استخراج IPs فريدة خلال آخر 5 دقائق
-      const uniqueIps = [...new Set(rateLimitData.ipList.map(i => i.ip))];
+  if (recentIPs.length === 0) {
+    // أضف IP مع الوقت الحالي
+    rateLimitData.ipList.push({ ip, time: now });
+    console.log(`🔍 VPN/Proxy Detected: ${ip} saved at ${now.toISOString()}`);
+  } else {
+    console.log(`⚠️ VPN IP ${ip} already recorded recently.`);
+  }
 
-      if (uniqueIps.length >= 3) {
-        return res.status(403).json({
-          errorCode: -403,
-          errorDesc: `Too many suspicious VPN/Proxy/Tor connections. Temporarily blocked.`,
-        });
-      }
-    }
+  // فحص عدد IPs خلال آخر 5 دقائق
+  const suspiciousCount = rateLimitData.ipList.filter(entry => entry.time > fiveMinutesAgo).length;
+
+  console.log(`📌 Suspicious IP count in last 5 min: ${suspiciousCount}`);
+
+  if (suspiciousCount >= 5) {
+    console.log(`⛔ Blocking user due to multiple suspicious VPN/Proxy accesses`);
+    return res.status(403).json({
+      errorCode: -403,
+      errorDesc: `Too many suspicious connections (VPN/Proxy/Tor). Access temporarily blocked.`,
+    });
+  }
+}
+
 
     // تجاوز الحد
     if (rateLimitData.points <= 0) {

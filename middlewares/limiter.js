@@ -55,7 +55,6 @@
 
 // module.exports = rateLimiterMiddleware;
 
-
 const RateLimit = require("../models/rateLimit");
 const axios = require("axios");
 
@@ -75,7 +74,7 @@ const checkVPN = async (ip) => {
 
     if (data.status === "ok" && result?.proxy === "yes") {
       const type = result.type?.toLowerCase() || "unknown";
-      console.log(true);
+      console.log(`🚨 Detected ${type.toUpperCase()} usage from IP: ${ip}`);
       return { isVpn: true, type };
     }
 
@@ -94,44 +93,45 @@ const rateLimiterMiddleware = async (req, res, next) => {
   const key = userID ? `cookie_${userID}` : `ip_${ip}`;
 
   try {
-    // فحص VPN / Proxy / Tor
     const vpnCheck = await checkVPN(ip);
-
     let rateLimitData = await RateLimit.findOne({ key });
 
     if (!rateLimitData) {
-      rateLimitData = new RateLimit({ key, ipList: [ip] });
+      rateLimitData = new RateLimit({ key, ipList: [] });
     }
 
     const currentTime = new Date();
     const elapsedTime = (currentTime - rateLimitData.lastReset) / 1000;
 
-    // إذا مر أكثر من ساعة نعيد تعيين النقاط
     if (elapsedTime > 60 * 60) {
       rateLimitData.points = 1000;
       rateLimitData.lastReset = currentTime;
       rateLimitData.ipList = [];
     }
 
-    // فحص الحظر المؤقت إذا في استخدام VPN/Tor متكرر
+    // ✅ إذا تم الكشف عن VPN أو Tor أو Proxy
     if (vpnCheck.isVpn) {
       rateLimitData.ipList = rateLimitData.ipList || [];
 
-      // أضف الـ IP إذا لم يكن موجود
-      if (!rateLimitData.ipList.includes(ip)) {
-        rateLimitData.ipList.push(ip);
-      }
+      // حذف الإدخالات الأقدم من 5 دقائق
+      const last5Min = new Date(Date.now() - 5 * 60 * 1000);
+      rateLimitData.ipList = rateLimitData.ipList.filter(entry => new Date(entry.time) > last5Min);
 
-      // إذا أكثر من 3 IPs مشبوهة خلال 5 دقائق ⇒ حظر
-      if (rateLimitData.ipList.length >= 5) {
+      // أضف IP جديد
+      rateLimitData.ipList.push({ ip, time: new Date() });
+
+      // استخراج IPs فريدة خلال آخر 5 دقائق
+      const uniqueIps = [...new Set(rateLimitData.ipList.map(i => i.ip))];
+
+      if (uniqueIps.length >= 3) {
         return res.status(403).json({
           errorCode: -403,
-          errorDesc: `Too many suspicious connections (VPN/Proxy/Tor). Access temporarily blocked.`,
+          errorDesc: `Too many suspicious VPN/Proxy/Tor connections. Temporarily blocked.`,
         });
       }
     }
 
-    // إذا النقاط خلصت
+    // تجاوز الحد
     if (rateLimitData.points <= 0) {
       return res.status(429).json({
         errorCode: -429,

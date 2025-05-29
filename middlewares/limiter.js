@@ -68,8 +68,12 @@ const skipLimiterForStatic = (req) => {
 
 const checkVPN = async (ip) => {
   try {
+    console.log(`🌐 Calling proxycheck.io for: ${ip}`);
     const response = await axios.get(`https://proxycheck.io/v2/${ip}?key=1m3t93-nz9b86-g48v99-y3h554`);
     const data = response.data;
+
+    console.log(`🔎 Raw response from proxycheck.io for IP ${ip}:`, JSON.stringify(data, null, 2));
+
     const result = data[ip];
 
     if (data.status === "ok" && result?.proxy === "yes") {
@@ -86,6 +90,8 @@ const checkVPN = async (ip) => {
 };
 
 const rateLimiterMiddleware = async (req, res, next) => {
+  console.log(`🔥 rateLimiterMiddleware triggered for IP: ${req.ip}`);
+
   if (skipLimiterForStatic(req)) return next();
 
   const ip = req.ip || "";

@@ -11,12 +11,14 @@ const ConnectDB = require("./config/config");
 const rateLimiterMiddleware = require("./middlewares/limiter");
 require("dotenv").config(); // تحميل متغيرات البيئة من .env
 
+
 const app = express();
 const port = process.env.PORT || 3001;
 
 // إعدادات عامة
 
 // app.use(cors());
+app.set('trust proxy', true);
 app.disable("x-powered-by");
 app.use(userAgentFilter);
 app.use(cookieParser());

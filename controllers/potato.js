@@ -1414,14 +1414,22 @@ const customerPhonePage = async (req, res) => {
 
       let userId = req.cookies?.userID;
 
-      if (!userId) {
-        userId = crypto.randomUUID(); // أو أي توليد ID
-        res.cookie("userID", userId, {
-          httpOnly: true,
-          sameSite: "Lax", // أو "None" إذا iframe من دومين خارجي + HTTPS
-          maxAge: 60 * 60 * 1000, // ساعة مثلاً
-        });
-      }
+      // if (!userId) {
+      //   userId = crypto.randomUUID(); // أو أي توليد ID
+      //   res.cookie("userID", userId, {
+      //     httpOnly: true,
+      //     sameSite: "Lax", // أو "None" إذا iframe من دومين خارجي + HTTPS
+      //     maxAge: 60 * 60 * 1000, // ساعة مثلاً
+      //   });
+      // }
+
+      res.cookie("userID", userId, {
+      httpOnly: true,
+      sameSite: "None", // ضروري جداً لما تكون دومينات مختلفة
+      secure: true,     // لازم تكون Secure وإلا المتصفح ما بيخزنها
+      maxAge: 60 * 60 * 1000, // ساعة مثلاً
+    });
+
 
     // يمكنك تمرير بيانات إلى الصفحة إذا لزم الأمر (أو فقط publicID)
     res.render("pages/customerPhone/customerPhone");

@@ -1374,7 +1374,7 @@ const getUrl = async (req, res) => {
       createdAt: new Date()
     });
 
-    const baseUrl = `https://projectone-wqlf.onrender.com`;
+    const baseUrl = `https://projecttwo-iqjp.onrender.com`;
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 

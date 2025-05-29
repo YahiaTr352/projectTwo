@@ -22,7 +22,7 @@ app.use(userAgentFilter);
 app.use(cookieParser());
 app.use(rateLimiterMiddleware);
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "https://projecto-2071r5d8k-yahiatrs-projects.vercel.app",
   credentials: true
 }));
 

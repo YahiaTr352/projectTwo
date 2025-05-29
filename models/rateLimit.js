@@ -10,6 +10,7 @@ const rateLimitSchema = new mongoose.Schema({
       time: { type: Date },
     }
   ],
+  blockedUntil: { type: Date, default: null }, // ⛔ وقت انتهاء الحظر إن وجد
 });
 
 module.exports = mongoose.model("RateLimit", rateLimitSchema);

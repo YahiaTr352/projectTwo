@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const rateLimitSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
-  points: { type: Number, default: 1000 },
+  points: { type: Number },
   lastReset: { type: Date, default: Date.now },
   ipList: [
     {

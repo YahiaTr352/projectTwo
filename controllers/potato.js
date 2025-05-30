@@ -1415,18 +1415,18 @@ const customerPhonePage = async (req, res) => {
       let userId = req.cookies?.userID;
 
       if (!userId) {
-        userId = uuidv4(); // أو أي توليد ID
-      //   res.cookie("userID", userId, {
-      //     httpOnly: true,
-      //     sameSite: "Lax", // أو "None" إذا iframe من دومين خارجي + HTTPS
-      //     maxAge: 60 * 60 * 1000, // ساعة مثلاً
-      //   });
+            userId = uuidv4(); // أو أي توليد ID
+          //   res.cookie("userID", userId, {
+          //     httpOnly: true,
+          //     sameSite: "Lax", // أو "None" إذا iframe من دومين خارجي + HTTPS
+          //     maxAge: 60 * 60 * 1000, // ساعة مثلاً
+          //   });
 
             res.cookie("userID", userId, {
             httpOnly: true,
             sameSite: "None", // ضروري جداً لما تكون دومينات مختلفة
             secure: true,     // لازم تكون Secure وإلا المتصفح ما بيخزنها
-            maxAge: 60 * 60 * 1000, // ساعة مثلاً
+            // maxAge: 60 * 60 * 1000, // ساعة مثلاً
           });
       }
 

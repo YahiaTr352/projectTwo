@@ -13,8 +13,8 @@ function setLoadingState(isLoading) {
 const pathParts = window.location.pathname.split("/");
 const publicID = pathParts[pathParts.length - 1];
 window.addEventListener("DOMContentLoaded", async () => {
-  const baseURL = "https://projecttwo-iqjp.onrender.com";
-    // const baseURL = "http://localhost:3001";
+  // const baseURL = "https://projecttwo-iqjp.onrender.com";
+    const baseURL = "http://localhost:3001";
   let fixedData;
     try{
     rsaKeyPair = await generateRSAKeyPair();
@@ -53,6 +53,7 @@ console.log(res);
 
 // 3. فك تشفير الاستجابة
 const decrypted = await decryptHybrid(res.data, rsaKeyPair.privateKey);
+console.log("📦 Decrypted response:", decrypted);
 const rawData = decrypted;
 
 console.log(rawData);

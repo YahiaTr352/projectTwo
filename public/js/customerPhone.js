@@ -16,8 +16,8 @@ function setLoadingState(isLoading) {
   text.textContent = isLoading ? "" : "Next";
 }
 
-const baseURL = "https://projecttwo-iqjp.onrender.com";
-// const baseURL = "http://localhost:3001";
+// const baseURL = "https://projecttwo-iqjp.onrender.com";
+const baseURL = "http://localhost:3001";
 
 async function sendData() {
   setPageLoadingState(true); // أظهر الشيمر أول ما تبدأ
@@ -27,6 +27,7 @@ async function sendData() {
     try{
     rsaKeyPair = await generateRSAKeyPair();
     const exportedPublicKey = await exportPublicKey(rsaKeyPair.publicKey);
+    console.log(exportedPublicKey);
     
     const resKey = await axios.post(`${baseURL}/api/clients/exchange-keys`, {
       clientPublicKey: exportedPublicKey, // ✅ تعديل الاسم
@@ -41,13 +42,13 @@ async function sendData() {
       console.log(error);
     }
 
-const payload = { pageID: publicID };
-const encryptedPayload = await encryptHybrid(JSON.stringify(payload), serverPublicKey);
+// const payload = { pageID: publicID };
+// const encryptedPayload = await encryptHybrid(JSON.stringify(payload), serverPublicKey);
 
 // 2. إرسال الطلب المشفر بـ POST
 try{
+  
 const encryptedPayloadWithPageID = {
-  ...encryptedPayload,
   pageID: publicID // ✅ أضفها داخل body
 };
 
@@ -60,10 +61,24 @@ const res = await axios.post(`${baseURL}/api/clients/payment-data`, encryptedPay
 console.log(res);
 
 // 3. فك تشفير الاستجابة
-const decrypted = await decryptHybrid(res.data, rsaKeyPair.privateKey);
-const rawData = decrypted;
+ console.log("Encrypted response:", res.data);
+  console.log("🔐 rsaKeyPair.privateKey:", rsaKeyPair.privateKey);
 
-console.log(rawData);
+  const decrypted = await decryptHybrid(res.data, rsaKeyPair.privateKey);
+
+  console.log("Decrypted data raw:", decrypted);
+  console.log("Type of decrypted:", typeof decrypted);
+
+  let rawData;
+  if (typeof decrypted === "string") {
+    rawData = JSON.parse(decrypted);
+  } else {
+    rawData = decrypted;
+  }
+
+  if (!rawData || !rawData.programmName) {
+    return showToast("Something went wrong, please try again later.");
+  }
 
 
 // 4. تعقيم البيانات

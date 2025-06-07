@@ -86,6 +86,7 @@ const userAgentFilter = require("./middlewares/userAgentFilter");
 const cookieParser = require("cookie-parser");
 const ConnectDB = require("./config/config");
 const rateLimiterMiddleware = require("./middlewares/limiter");
+const connectKeysDB = require("./config/keysDatabase");
 require("dotenv").config(); // تحميل متغيرات البيئة من .env
 
 const app = express();
@@ -125,6 +126,7 @@ app.set("views", path.join(__dirname, "views"));
 
 // ✅ الاتصال بقاعدة البيانات
 ConnectDB();
+connectKeysDB();
 
 // ✅ إعدادات الجلسة
 const sessionSecret = process.env.SESSION_SECRET || "default_session_secret";

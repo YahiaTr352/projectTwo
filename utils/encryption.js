@@ -20,9 +20,16 @@ function generateRSAKeyPair() {
 
 // تحويل مفتاح عام بصيغة base64 إلى PEM
 function convertB64ToPem(b64Key) {
+  // احذف أي رؤوس أو تذييل مكررين
+  b64Key = b64Key
+    .replace(/-----BEGIN PUBLIC KEY-----/g, '')
+    .replace(/-----END PUBLIC KEY-----/g, '')
+    .replace(/\s+/g, ''); // إزالة المسافات/أسطر إضافية
+
   const formatted = b64Key.match(/.{1,64}/g).join('\n');
   return `-----BEGIN PUBLIC KEY-----\n${formatted}\n-----END PUBLIC KEY-----`;
 }
+
 
 // تشفير Hybrid: AES-GCM للبيانات + RSA-OAEP لمفتاح AES
 function encryptHybrid(data, b64PublicKey) {
@@ -60,6 +67,7 @@ function encryptHybrid(data, b64PublicKey) {
 
 // فك التشفير Hybrid
 function decryptHybrid({ ciphertext, encryptedAESKey, iv, authTag }, privateKeyPem) {
+  
   // فك تشفير AES key باستخدام المفتاح الخاص
   const aesKey = crypto.privateDecrypt(
     {
@@ -87,11 +95,51 @@ function sendEncryptedError(res, clientPublicKey, message, statusCode = 400) {
   return res.status(statusCode).json(encryptedError);
 }
 
+const algorithm = "aes-256-gcm";
+const ivLength = 12;
+const secretKey = Buffer.from(process.env.SECRET_KEY || "x4QjKl*9c@2#L!w8eA3p$7rT1zY0V6uD".padEnd(32, "!"));
+
+function encryptKeyGCM(plaintext) {
+  const iv = crypto.randomBytes(ivLength);
+  const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
+
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final()
+  ]);
+
+  const authTag = cipher.getAuthTag();
+
+  return {
+    iv: iv.toString("base64"),
+    authTag: authTag.toString("base64"),
+    ciphertext: encrypted.toString("base64")
+  };
+}
+
+function decryptKeyGCM({ iv, authTag, ciphertext }) {
+  const decipher = crypto.createDecipheriv(
+    algorithm,
+    secretKey,
+    Buffer.from(iv, "base64")
+  );
+
+  decipher.setAuthTag(Buffer.from(authTag, "base64"));
+
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(ciphertext, "base64")),
+    decipher.final()
+  ]);
+
+  return decrypted.toString("utf8").trim();
+}
 
 module.exports = {
   generateRSAKeyPair,
   encryptHybrid,
   decryptHybrid,
   convertB64ToPem,
-  sendEncryptedError
+  sendEncryptedError,
+  encryptKeyGCM,
+  decryptKeyGCM
 };

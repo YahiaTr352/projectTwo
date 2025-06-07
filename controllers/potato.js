@@ -264,12 +264,16 @@ const {
   generateRSAKeyPair,
   encryptHybrid,
   decryptHybrid,
-  sendEncryptedError
+  sendEncryptedError,
+  encryptKeyGCM,
+  decryptKeyGCM
 } = require('../utils/encryption');
 const paymentData = require("../models/paymentDataModel");
+const getEncryptionKeyModel = require("../models/keysModel");
+const EncryptionKeyModel = require("../models/keysModel");
 
-const BASE_API_URL = "https://projectone-wqlf.onrender.com";
-// const BASE_API_URL = "http://localhost:5000";
+// const BASE_API_URL = "https://projectone-wqlf.onrender.com";
+const BASE_API_URL = "http://localhost:5000";
 // ======== API Handlers ========
 
 // const getToken = async (req, res) => {
@@ -432,10 +436,12 @@ const getToken = async (req, res) => {
   let transaction;
   let clientPublicKey;
   let serverPrivateKey;
+  let decryptedPrivateKey;
+  let decryptedPublicKey;
 
   // 🧩 ابحث عن المعاملة
   try {
-    transaction = await paymentData.findOne({
+    transaction = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": pageID },
         { "publicIDs.otpPage": pageID }
@@ -449,9 +455,13 @@ const getToken = async (req, res) => {
     clientPublicKey = transaction.clientPublicKey;
     serverPrivateKey = transaction.serverPrivateKey;
 
-    if (!clientPublicKey || !serverPrivateKey) {
-      return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
+    if (!serverPrivateKey || !clientPublicKey) {
+      return res.status(400).json({message : "missing encryption keys."});
     }
+    
+     decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+     decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
+
   } catch (e) {
     console.error("DB error:", e);
     return res.status(500).json({ message: "Database error" });
@@ -459,24 +469,25 @@ const getToken = async (req, res) => {
 
   // 🔓 فك تشفير الطلب
   try {
-    decryptedData = JSON.parse(decryptHybrid(encryptedBody, serverPrivateKey));
+    decryptedData = JSON.parse(decryptHybrid(encryptedBody, decryptedPrivateKey));
 
     // تحقق أن pageID داخل الرسالة المشفّرة يطابق الخارجي
     if (decryptedData.pageID !== pageID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
+      return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
     }
   } catch (e) {
     console.error("Decryption failed:", e);
-    return sendEncryptedError(res, clientPublicKey, "Invalid encrypted payload", 400);
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid encrypted payload", 400);
   }
 
   const { companyName, programmName, merchantMSISDN, code } = decryptedData;
+  console.log(companyName);
 
   // ✅ تحقق من القيم
-  if (!isValidString(companyName)) return sendEncryptedError(res, clientPublicKey, "Invalid CompanyName");
-  if (!isValidString(programmName)) return sendEncryptedError(res, clientPublicKey, "Invalid ProgrammName");
-  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, clientPublicKey, "Invalid Merchant Phone Number");
-  if (!isValidNumber(code)) return sendEncryptedError(res, clientPublicKey, "Invalid Code");
+  if (!isValidString(companyName)) return sendEncryptedError(res, decryptedPublicKey, "Invalid CompanyName");
+  if (!isValidString(programmName)) return sendEncryptedError(res, decryptedPublicKey, "Invalid ProgrammName");
+  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Merchant Phone Number");
+  if (!isValidNumber(code)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Code");
 
   try {
     const response = await axios.post(`${BASE_API_URL}/api/clients/get-token`, {
@@ -486,7 +497,7 @@ const getToken = async (req, res) => {
       code,
     });
 
-    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
+    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
     return res.status(200).json(encryptedResponse);
 
   } catch (error) {
@@ -495,7 +506,7 @@ const getToken = async (req, res) => {
       error.response?.data?.errorDesc;
 
     if (clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, errMsg || "Internal Server Error", error.response?.status || 500);
+      return sendEncryptedError(res, decryptedPublicKey, errMsg || "Internal Server Error", error.response?.status || 500);
     }
 
     return res.status(500).json({ message: 'Internal Server Error' });
@@ -615,6 +626,9 @@ const paymentRequest = async (req, res) => {
   let transaction;
   let clientPublicKey;
   let serverPrivateKey;
+  let getKeys;
+  let decryptedPublicKey;
+  let decryptedPrivateKey;
 
   // 🔍 ابحث عن مفاتيح التشفير من قاعدة البيانات
   try {
@@ -625,16 +639,27 @@ const paymentRequest = async (req, res) => {
       ]
     });
 
+   getKeys = await EncryptionKeyModel.findOne({
+      $or: [
+        { "publicIDs.phonePage": pageID },
+        { "publicIDs.otpPage": pageID }
+      ]
+    });
+
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    clientPublicKey = transaction.clientPublicKey;
-    serverPrivateKey = transaction.serverPrivateKey;
+    clientPublicKey = getKeys.clientPublicKey;
+    serverPrivateKey = getKeys.serverPrivateKey;
 
-    if (!clientPublicKey || !serverPrivateKey) {
-      return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
+    if (!serverPrivateKey || !clientPublicKey) {
+      return res.status(400).json({message : "missing encryption keys."});
     }
+    
+     decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+     decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
+
   } catch (e) {
     console.error("DB error:", e);
     return res.status(500).json({ message: "Database error" });
@@ -643,15 +668,15 @@ const paymentRequest = async (req, res) => {
   // 🔓 فك التشفير باستخدام المفتاح الخاص
   let decryptedData;
   try {
-    decryptedData = JSON.parse(decryptHybrid(encryptedBody, serverPrivateKey));
+    decryptedData = JSON.parse(decryptHybrid(encryptedBody, decryptedPrivateKey));
 
     // تحقق من تطابق pageID
     if (decryptedData.pageID !== pageID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
+      return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
     }
   } catch (err) {
     console.error("Decryption failed:", err);
-    return res.status(400).json(encryptHybrid(JSON.stringify({ message: "Invalid encrypted request" }), clientPublicKey));
+    return res.status(400).json(encryptHybrid(JSON.stringify({ message: "Invalid encrypted request" }), decryptedPublicKey));
   }console.log("🔓 Decrypted data on server:", decryptedData);
 
   console.log("🔓 Decrypted data on server:", decryptedData);
@@ -660,10 +685,10 @@ const paymentRequest = async (req, res) => {
   const { code, customerMSISDN, merchantMSISDN, amount, token, transactionID } = decryptedData;
 
   // ✅ تحقق من القيم
-  if (!isValidNumber(code)) return sendEncryptedError(res, clientPublicKey, "Invalid Code");
-  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, clientPublicKey, "Invalid Merchant Phone Number");
-  if (!validateCustomerPhoneNumber(customerMSISDN)) return sendEncryptedError(res, clientPublicKey, "Invalid Customer Phone Number");
-  if (!isValidAmount(amount)) return sendEncryptedError(res, clientPublicKey, "Invalid amount");
+  if (!isValidNumber(code)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Code");
+  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Merchant Phone Number");
+  if (!validateCustomerPhoneNumber(customerMSISDN)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Customer Phone Number");
+  if (!isValidAmount(amount)) return sendEncryptedError(res, decryptedPublicKey, "Invalid amount");
 
   // 🧾 أرسل الطلب إلى سيرفر الدفع
   try {
@@ -690,7 +715,7 @@ const paymentRequest = async (req, res) => {
 }
 
     // 🔐 شفر الرد وأرسله
-    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
+    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
     return res.status(response.status).json(encryptedResponse);
 
   } catch (error) {
@@ -701,7 +726,7 @@ const paymentRequest = async (req, res) => {
       error.response?.data?.errorDesc ||
       "Internal Server Error";
 
-    return sendEncryptedError(res, clientPublicKey, errMsg, error.response?.status || 500);
+    return sendEncryptedError(res, decryptedPublicKey, errMsg, error.response?.status || 500);
   }
 };
 
@@ -800,10 +825,20 @@ const paymentConfirmation = async (req, res) => {
   let transaction;
   let clientPublicKey;
   let serverPrivateKey;
+  let getKeys;
+  let decryptedPublicKey;
+  let decryptedPrivateKey;
 
   // 🔎 ابحث عن المعاملة بالمخزن
   try {
-    transaction = await paymentData.findOne({
+    transaction = await EncryptionKeyModel.findOne({
+      $or: [
+        { "publicIDs.phonePage": pageID },
+        { "publicIDs.otpPage": pageID }
+      ]
+    });
+
+    getKeys = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": pageID },
         { "publicIDs.otpPage": pageID }
@@ -814,12 +849,16 @@ const paymentConfirmation = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    clientPublicKey = transaction.clientPublicKey;
-    serverPrivateKey = transaction.serverPrivateKey;
+    clientPublicKey = getKeys.clientPublicKey;
+    serverPrivateKey = getKeys.serverPrivateKey;
 
-    if (!clientPublicKey || !serverPrivateKey) {
-      return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
+    if (!serverPrivateKey || !clientPublicKey) {
+       return res.status(400).json({message : "missing encryption keys."});
     }
+    
+     decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+     decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
+
   } catch (e) {
     console.error("DB error:", e);
     return res.status(500).json({ message: "Database error" });
@@ -828,24 +867,24 @@ const paymentConfirmation = async (req, res) => {
   // 🔓 فك التشفير
   let decryptedData;
   try {
-    decryptedData = JSON.parse(decryptHybrid(encryptedBody, serverPrivateKey));
+    decryptedData = JSON.parse(decryptHybrid(encryptedBody, decryptedPrivateKey));
     console.log("🔓 Decrypted payment confirmation data:", decryptedData);
 
     if (decryptedData.pageID !== pageID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
+      return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
     }
   } catch (err) {
     console.error("❌ Failed to decrypt payment confirmation request:", err);
-    return sendEncryptedError(res, clientPublicKey, "Invalid encrypted request");
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid encrypted request");
   }
 
   const { code, merchantMSISDN, OTP, token, transactionID } = decryptedData;
 
   // ✅ التحقق من البيانات
-  if (!transactionID) return sendEncryptedError(res, clientPublicKey, "Missing transaction ID");
-  if (!isValidNumber(code)) return sendEncryptedError(res, clientPublicKey, "Invalid Code");
-  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, clientPublicKey, "Invalid Merchant Phone Number");
-  if (!isValidOTP(OTP)) return sendEncryptedError(res, clientPublicKey, "Invalid OTP");
+  if (!transactionID) return sendEncryptedError(res, decryptedPublicKey, "Missing transaction ID");
+  if (!isValidNumber(code)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Code");
+  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Merchant Phone Number");
+  if (!isValidOTP(OTP)) return sendEncryptedError(res, decryptedPublicKey, "Invalid OTP");
 
   try {
     // 📨 أرسل البيانات لـ Syriatel
@@ -865,7 +904,7 @@ const paymentConfirmation = async (req, res) => {
 
 
     // 🔐 تشفير الرد
-    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
+    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
     return res.status(response.status).json(encryptedResponse);
 
   } catch (error) {
@@ -874,11 +913,11 @@ const paymentConfirmation = async (req, res) => {
       error.response?.data?.errorDesc;
 
     if (error.response && clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, errMsg, error.response.status);
+      return sendEncryptedError(res, decryptedPublicKey, errMsg, error.response.status);
     }
 
     if (clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, "Internal Server Error", 500);
+      return sendEncryptedError(res, decryptedPublicKey, "Internal Server Error", 500);
     }
 
     return res.status(500).json({ message: 'Internal Server Error' });
@@ -919,10 +958,12 @@ const resendOTP = async (req, res) => {
   let transaction;
   let clientPublicKey;
   let serverPrivateKey;
+  let decryptedPrivateKey;
+  let decryptedPublicKey;
 
   // 🔍 ابحث عن المعاملة باستخدام pageID
   try {
-    transaction = await paymentData.findOne({
+    transaction = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": pageID },
         { "publicIDs.otpPage": pageID }
@@ -936,9 +977,13 @@ const resendOTP = async (req, res) => {
     clientPublicKey = transaction.clientPublicKey;
     serverPrivateKey = transaction.serverPrivateKey;
 
-    if (!clientPublicKey || !serverPrivateKey) {
+    if (!serverPrivateKey || !clientPublicKey) {
       return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
     }
+    
+     decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+     decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
+
   } catch (e) {
     console.error("Database error:", e);
     return res.status(500).json({ message: "Database error" });
@@ -947,25 +992,25 @@ const resendOTP = async (req, res) => {
   // 🔓 فك التشفير
   let decryptedData;
   try {
-    const decryptedString = decryptHybrid(encryptedBody, serverPrivateKey);
+    const decryptedString = decryptHybrid(encryptedBody, decryptedPrivateKey);
     console.log("🔓 Decrypted resendOTP data:", decryptedString);
     decryptedData = JSON.parse(decryptedString);
 
     // ✅ تحقق من تطابق pageID داخل التشفير مع الخارجي
     if (decryptedData.pageID !== pageID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
+      return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
     }
   } catch (err) {
     console.error("❌ Decryption failed in resendOTP:", err);
-    return sendEncryptedError(res, clientPublicKey, "Invalid encrypted payload");
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid encrypted payload");
   }
 
   const { code, merchantMSISDN, token, transactionID } = decryptedData;
 
   // ✅ التحقق من البيانات
-  if (!transactionID) return sendEncryptedError(res, clientPublicKey, "Missing transaction ID");
-  if (!isValidNumber(code)) return sendEncryptedError(res, clientPublicKey, "Invalid Code");
-  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, clientPublicKey, "Invalid Merchant Phone Number");
+  if (!transactionID) return sendEncryptedError(res, decryptedPublicKey, "Missing transaction ID");
+  if (!isValidNumber(code)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Code");
+  if (!validateMerchantPhoneNumber(merchantMSISDN)) return sendEncryptedError(res, decryptedPublicKey, "Invalid Merchant Phone Number");
 
   try {
     // 📡 إرسال الطلب إلى Syritel
@@ -977,7 +1022,7 @@ const resendOTP = async (req, res) => {
     });
 
     // 🔐 تشفير الرد
-    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
+    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
     return res.status(response.status).json(encryptedResponse);
 
   } catch (error) {
@@ -986,11 +1031,11 @@ const resendOTP = async (req, res) => {
       error.response?.data?.errorDesc;
 
     if (error.response && clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, errMsg, error.response.status);
+      return sendEncryptedError(res, decryptedPublicKey, errMsg, error.response.status);
     }
 
     if (clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, "Internal Server Error", 500);
+      return sendEncryptedError(res, decryptedPublicKey, "Internal Server Error", 500);
     }
 
     return res.status(500).json({ message: 'Internal Server Error' });
@@ -1030,10 +1075,12 @@ const getRedirctUrl = async (req, res) => {
   let transaction;
   let clientPublicKey;
   let serverPrivateKey;
+  let decryptedPublicKey;
+  let decryptedPrivateKey;
 
   // 📦 جلب المفاتيح من قاعدة البيانات
   try {
-    transaction = await paymentData.findOne({
+    transaction = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": pageID },
         { "publicIDs.otpPage": pageID }
@@ -1047,9 +1094,12 @@ const getRedirctUrl = async (req, res) => {
     clientPublicKey = transaction.clientPublicKey;
     serverPrivateKey = transaction.serverPrivateKey;
 
-    if (!clientPublicKey || !serverPrivateKey) {
-      return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
+    if (!serverPrivateKey || !clientPublicKey) {
+          return res.status(400).json({message : "missing encryption keys."});
     }
+    
+     decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+     decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
   } catch (e) {
     console.error("❌ Database error:", e);
     return res.status(500).json({ message: "Database error" });
@@ -1058,32 +1108,32 @@ const getRedirctUrl = async (req, res) => {
   // 🔓 فك التشفير
   let decryptedData;
   try {
-    const decryptedString = decryptHybrid(encryptedBody, serverPrivateKey);
+    const decryptedString = decryptHybrid(encryptedBody, decryptedPrivateKey);
     console.log("🔓 Decrypted getRedirctUrl data:", decryptedString);
     decryptedData = JSON.parse(decryptedString);
 
     if (decryptedData.pageID !== pageID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
+      return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
     }
   } catch (err) {
     console.error("❌ Decryption failed in getRedirctUrl:", err);
-    return sendEncryptedError(res, clientPublicKey, "Invalid encrypted payload", 400);
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid encrypted payload", 400);
   }
 
   const { code, companyName, programmName } = decryptedData;
 
   // ✅ التحقق من البيانات
   if (!code || !companyName || !programmName) {
-    return sendEncryptedError(res, clientPublicKey, "All fields are required.");
+    return sendEncryptedError(res, decryptedPublicKey, "All fields are required.");
   }
   if (!isValidString(companyName)) {
-    return sendEncryptedError(res, clientPublicKey, "Invalid CompanyName");
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid CompanyName");
   }
   if (!isValidString(programmName)) {
-    return sendEncryptedError(res, clientPublicKey, "Invalid ProgrammName");
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid ProgrammName");
   }
   if (!isValidNumber(code)) {
-    return sendEncryptedError(res, clientPublicKey, "Invalid Code");
+    return sendEncryptedError(res, decryptedPublicKey, "Invalid Code");
   }
 
   try {
@@ -1095,7 +1145,7 @@ const getRedirctUrl = async (req, res) => {
     });
 
     // 🔐 تشفير الرد
-    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), clientPublicKey);
+    const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
     return res.status(response.status).json(encryptedResponse);
 
   } catch (error) {
@@ -1104,11 +1154,11 @@ const getRedirctUrl = async (req, res) => {
       error.response?.data?.errorDesc;
 
     if (error.response && clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, errMsg, error.response.status);
+      return sendEncryptedError(res, decryptedPublicKey, errMsg, error.response.status);
     }
 
     if (clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, "Internal Server Error", 500);
+      return sendEncryptedError(res, decryptedPublicKey, "Internal Server Error", 500);
     }
 
     return res.status(500).json({ message: 'Internal Server Error' });
@@ -1353,10 +1403,12 @@ const getUrl = async (req, res) => {
   const publicID_phonePage = uuidv4();
   const publicID_otpPage = uuidv4();
 
-  // const serverPrivateKey = generateServerPrivateKey(); // استخدم طريقتك لتوليد مفتاح RSA
-
   try {
     await paymentData.create({
+          publicIDs: {
+            phonePage: publicID_phonePage,
+            otpPage: publicID_otpPage,
+          },
       transactionID,
       companyName,
       programmName,
@@ -1365,16 +1417,20 @@ const getUrl = async (req, res) => {
       customerMSISDN : null,
       amount,
       otp: null,
-      publicIDs: {
-        phonePage: publicID_phonePage,
-        otpPage: publicID_otpPage
-      },
-      clientPublicKey : null,
-      serverPrivateKey :null,
       createdAt: new Date()
     });
 
-    const baseUrl = `https://projecttwo-iqjp.onrender.com`;
+    await EncryptionKeyModel.create({
+      clientPublicKey : null,
+      serverPrivateKey : null,
+          publicIDs: {
+            phonePage: publicID_phonePage,
+            otpPage: publicID_otpPage,
+          },
+    });
+
+
+    const baseUrl = `http://localhost:3001`;
     const redirectUrl = `${baseUrl}/api/clients/customerPhone-page/${publicID_phonePage}`;
     return res.json({ url: redirectUrl });
 
@@ -1401,7 +1457,7 @@ const customerPhonePage = async (req, res) => {
 
   try {
     // البحث في قاعدة البيانات عن المعاملة التي تحتوي على الـ publicID
-    const transaction = await paymentData.findOne({
+    const transaction = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": publicID },
         { "publicIDs.otpPage": publicID }
@@ -1462,7 +1518,7 @@ const otpVerificationPage = async(req, res) => {
 
   try {
     // البحث في قاعدة البيانات عن المعاملة التي تحتوي على الـ publicID
-    const transaction = await paymentData.findOne({
+    const transaction = await EncryptionKeyModel.findOne({
       $or: [
         { "publicIDs.phonePage": publicID },
         { "publicIDs.otpPage": publicID }
@@ -1694,13 +1750,13 @@ const otpVerificationPage = async(req, res) => {
 
 
 const getPaymentData = async (req, res) => {
-  const { encryptedAESKey, iv, ciphertext, authTag } = req.body;
+  // const { encryptedAESKey, iv, ciphertext, authTag } = req.body;
 
-  if (!encryptedAESKey || !iv || !ciphertext || !authTag) {
-    return res.status(400).json({ message: "Missing encrypted fields" });
-  }
+  // if (!encryptedAESKey || !iv || !ciphertext || !authTag) {
+  //   return res.status(400).json({ message: "Missing encrypted fields" });
+  // }
 
-  let decryptedRequest;
+  // let decryptedRequest;
   let publicID;
 
   try {
@@ -1720,31 +1776,45 @@ const getPaymentData = async (req, res) => {
       ]
     });
 
+    const getKeys = await EncryptionKeyModel.findOne({
+      $or: [
+        { "publicIDs.phonePage": publicID },
+        { "publicIDs.otpPage": publicID }
+      ]
+    });
+
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });
     }
+    
+    const serverPrivateKey = getKeys.serverPrivateKey;
+    const clientPublicKey = getKeys.clientPublicKey;
+    console.log("🔎 raw clientPublicKey from DB:", clientPublicKey);
 
-    const serverPrivateKey = transaction.serverPrivateKey;
-    const clientPublicKey = transaction.clientPublicKey;
 
     if (!serverPrivateKey || !clientPublicKey) {
-      return sendEncryptedError(res, clientPublicKey, "Missing encryption keys", 401);
+           return res.status(400).json({message : "missing encryption keys."});
     }
+    
+    const decryptedPublicKey = decryptKeyGCM(clientPublicKey);
+    const decryptedPrivateKey = decryptKeyGCM(serverPrivateKey);
+        // console.log("after decryption : " + decryptedPublicKey);
 
-    decryptedRequest = JSON.parse(
-      decryptHybrid({ encryptedAESKey, iv, ciphertext, authTag }, serverPrivateKey)
-    );
+    // decryptedRequest = JSON.parse(
+    //   decryptHybrid({ encryptedAESKey, iv, ciphertext, authTag }, decryptedPrivateKey)
+    // );
 
-    // تحقق إن الـ publicID في البيانات المشفّرة يطابق الموجود مسبقًا
-    if (decryptedRequest?.pageID !== publicID) {
-      return sendEncryptedError(res, clientPublicKey, "Mismatched page ID", 400);
-    }
+    // // تحقق إن الـ publicID في البيانات المشفّرة يطابق الموجود مسبقًا
+    // if (decryptedRequest?.pageID !== publicID) {
+    //   return sendEncryptedError(res, decryptedPublicKey, "Mismatched page ID", 400);
+    // }
 
     const otpPageID =
       transaction.publicIDs.otpPage === publicID
         ? transaction.publicIDs.phonePage
         : transaction.publicIDs.otpPage;
 
+    console.log(transaction);
     const payload = {
       companyName: transaction.companyName,
       programmName: transaction.programmName,
@@ -1755,8 +1825,11 @@ const getPaymentData = async (req, res) => {
       otp: transaction.otp,
       otpPageID
     };
+    console.log("📢 decryptedPublicKey:", decryptedPublicKey);
+console.log("📢 type of decryptedPublicKey:", typeof decryptedPublicKey);
 
-    const encryptedResponse = encryptHybrid(JSON.stringify(payload), clientPublicKey);
+
+    const encryptedResponse = encryptHybrid(JSON.stringify(payload), decryptedPublicKey);
     return res.status(200).json(encryptedResponse);
 
   } catch (err) {
@@ -1828,9 +1901,14 @@ const exchangeKeys = async (req, res) => {
 
   try {
     const { publicKey, privateKey } = generateRSAKeyPair();
+    console.log("before encryption : " + clientPublicKey);
+
+
+    const encryptedPublicKey = encryptKeyGCM(clientPublicKey);
+    const encryptedPrivateKey = encryptKeyGCM(privateKey);
 
     // 🔍 تحديث حسب phonePage أو otpPage
-    const updated = await paymentData.findOneAndUpdate(
+    const updated = await EncryptionKeyModel.findOneAndUpdate(
       {
         $or: [
           { "publicIDs.phonePage": phonePageID },
@@ -1838,8 +1916,8 @@ const exchangeKeys = async (req, res) => {
         ]
       },
       {
-        clientPublicKey,
-        serverPrivateKey: privateKey
+        clientPublicKey : encryptedPublicKey,
+        serverPrivateKey: encryptedPrivateKey
       },
       { new: true }
     );

@@ -12,7 +12,7 @@ const transactionSchema = new mongoose.Schema({
   merchantMSISDN: {type : String},
   customerMSISDN: {type : String},
   amount:{type : Number},
-  otp: { type: String, default: null },
+  // otp: { type: String, default: null },
   paymentSuccess: { type: Boolean, default: false }, 
   createdAt: { type: Date, default: Date.now }
 });

@@ -702,17 +702,17 @@ const paymentRequest = async (req, res) => {
     });
 
     // 🧠 خزّن OTP إذا وُجد
-   if (response.data.details?.otp && transactionID) {
-  await paymentData.updateOne(
-    { _id: transaction._id },
-    {
-      $set: {
-        otp: response.data.details.otp,
-        customerMSISDN // 👈 أضف هذا
-      }
-    }
-  );
-}
+//    if (response.data.details?.otp && transactionID) {
+//   await paymentData.updateOne(
+//     { _id: transaction._id },
+//     {
+//       $set: {
+//         otp: response.data.details.otp,
+//         customerMSISDN // 👈 أضف هذا
+//       }
+//     }
+//   );
+// }
 
     // 🔐 شفر الرد وأرسله
     const encryptedResponse = encryptHybrid(JSON.stringify(response.data), decryptedPublicKey);
@@ -1416,7 +1416,7 @@ const getUrl = async (req, res) => {
       merchantMSISDN,
       customerMSISDN : null,
       amount,
-      otp: null,
+      // otp: null,
       createdAt: new Date()
     });
 
@@ -1822,7 +1822,7 @@ const getPaymentData = async (req, res) => {
       amount: transaction.amount,
       code: transaction.code,
       transactionID: transaction.transactionID,
-      otp: transaction.otp,
+      // otp: transaction.otp,
       otpPageID
     };
     console.log("📢 decryptedPublicKey:", decryptedPublicKey);

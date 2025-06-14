@@ -97,7 +97,7 @@ function sendEncryptedError(res, clientPublicKey, message, statusCode = 400) {
 
 const algorithm = "aes-256-gcm";
 const ivLength = 12;
-const secretKey = Buffer.from(process.env.SECRET_KEY || "x4QjKl*9c@2#L!w8eA3p$7rT1zY0V6uD".padEnd(32, "!"));
+const secretKey = Buffer.from(process.env.SECRET_KEY.padEnd(32, "!"));
 
 function encryptKeyGCM(plaintext) {
   const iv = crypto.randomBytes(ivLength);

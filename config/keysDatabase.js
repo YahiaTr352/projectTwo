@@ -1,15 +1,12 @@
-// config/keysDatabase.js
 const mongoose = require('mongoose');
 
 let keysConnection;
+const uri = process.env.CONNECT_SECONDARY_DATABASE;
 
 const connectKeysDB = () => {
   if (keysConnection) return keysConnection;
 
-  keysConnection = mongoose.createConnection("mongodb+srv://user1:yahiamo99@cluster0.0gd385v.mongodb.net/keysProject?retryWrites=true&w=majority&appName=Cluster0", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  keysConnection = mongoose.createConnection(uri);
 
   keysConnection.on('connected', () => {
     console.log('✅ Connected to Keys DB');
